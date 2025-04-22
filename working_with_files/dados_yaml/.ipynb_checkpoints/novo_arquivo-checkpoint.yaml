@@ -1,0 +1,9 @@
+computador:
+  cpu:
+    model: ryzen 5600x
+  disco:
+    hdd: 1tb
+    ssd: 256gb
+  memoria:
+    ram: 16gb
+  monitor: LG-21"
