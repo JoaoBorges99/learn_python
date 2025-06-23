@@ -37,6 +37,14 @@ def chamar_htmlErro ():
         conteudo = arquivo.read()
     return JSONResponse(content={"url": f"/{filepath}"})
 
+@app.get("/")
+async def root():
+    return {"message": "API de Gráficos Dinâmicos. Envie dados via POST para /graficos."}
+
+@app.get("/favicon.ico")
+async def favicon():
+    return FileResponse("favicon.ico")
+
 @app.post("/graficos")
 async def gerar_grafico(request: Request):
     try:
@@ -84,6 +92,7 @@ async def gerar_grafico(request: Request):
         <head>
           <title>Gráficos Dinâmicos</title>
           <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+          <link rel="icon" type="image/x-icon" href="http://localhost:8000/favicon.ico">
         </head>
         <body>"""
 
@@ -102,8 +111,3 @@ async def gerar_grafico(request: Request):
     except Exception as e:
         print(f"Erro geral: {e}")
         return chamar_htmlErro()
-
-
-@app.get("/")
-async def root():
-    return {"message": "API de Gráficos Dinâmicos. Envie dados via POST para /graficos."}
