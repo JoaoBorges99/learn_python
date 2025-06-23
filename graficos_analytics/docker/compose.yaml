@@ -1,0 +1,24 @@
+services:
+  api:
+    image: graficos_analytics
+    container_name: graficos_analytics
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    ports:
+      - 8000:8000
+    volumes:
+      - ../static:/app/static    
+      - ../api_graficos.py:/app/api_graficos.py  
+    command: ["uvicorn", "api_graficos:app", "--host=0.0.0.0", "--port=8000", "--reload"]
+
+  limpar_html:
+    image: limpar_html
+    container_name: limpar_html
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ../static:/app/static
+      - ../server_config.py:/app/server_config.py
+    command: ["python", "server_config.py", "--reload"]

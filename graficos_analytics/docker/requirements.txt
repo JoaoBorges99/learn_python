@@ -1,0 +1,9 @@
+pandas
+numpy
+plotly
+fastapi
+uvicorn
+anaconda
+rocketry
+psutil
+pydantic==1.10.10
