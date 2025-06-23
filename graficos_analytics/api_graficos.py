@@ -49,6 +49,15 @@ async def favicon():
 async def gerar_grafico(request: Request):
     try:
         data = await request.json()
+        # Extrair campos extras do payload ou definir padrão
+        # titulo = data.pop("titulo", "Relatório de Gráficos Dinâmicos")
+        # emitente = data.pop("emitente", "Usuário Desconhecido")
+        # data_expiracao = data.pop("data_expiracao", "-")        
+        titulo = 'Teste'
+        emitente = 'Joaothegod'
+        data_expiracao = '31/10/2023 23:59:59'
+        data_emissao = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M:%S")
+
         df = pd.DataFrame(data)
 
         numericas = []
@@ -78,28 +87,26 @@ async def gerar_grafico(request: Request):
                 try:
                     agrupado = df.groupby(dim, as_index=False)[met].sum()
                     fig = px.bar(agrupado, x=dim, y=met,title=f"{formatar_nomeColuna(met)} por {formatar_nomeColuna(dim)}")
-                    html = fig.to_html(full_html=True, include_plotlyjs=False)
-                    graficos_html.append(html)
+                    html = fig.to_html(full_html=False, include_plotlyjs=False)
+                    graficos_html.append(f'<div class="grafico">{html}</div>')
                 except Exception as e: 
                     print(f"Erro ao gerar gráfico para {dim} x {met}: {e}")
 
         if not graficos_html:
             # ⚠️ Nenhum gráfico válido gerado: retorne página de erro
             return chamar_htmlErro()
-           
 
-        pagina = """<html>
-        <head>
-          <title>Gráficos Dinâmicos</title>
-          <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-          <link rel="icon" type="image/x-icon" href="http://localhost:8000/favicon.ico">
-        </head>
-        <body>"""
+        # Ler template HTML externo
+        template_path = os.path.join(STATIC_DIR, "pagina_template/template.html")
+        with open(template_path, "r", encoding="utf-8") as f:
+            template = f.read()
 
-        for graf in graficos_html:
-            pagina += graf + "<hr>"
-
-        pagina += "</body></html>"
+        # Substituir placeholders
+        pagina = template.replace("{{titulo}}", str(titulo)) \
+                         .replace("{{emitente}}", str(emitente)) \
+                         .replace("{{data_emissao}}", str(data_emissao)) \
+                         .replace("{{data_expiracao}}", str(data_expiracao)) \
+                         .replace("{{graficos}}", "<hr>".join(graficos_html))
 
         filename = f"grafico_{uuid.uuid4().hex}.html"
         filepath = os.path.join(STATIC_DIR, filename)

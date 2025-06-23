@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>{{titulo}}</title>
+    <link rel="stylesheet" href="/static/pagina_template/graficos.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div class="header">
+        <h1>{{titulo}}</h1>
+        <div class="info-relatorio">
+            <span><strong>Emitido por:</strong> {{emitente}}</span>
+            <span><strong>Data/Hora de emissão:</strong> {{data_emissao}}</span>
+            <span><strong>Expira em:</strong> {{data_expiracao}}</span>
+        </div>
+    </div>
+    <div id="graficos-container">
+        {{graficos}}
+    </div>
+</body>
+</html> 
