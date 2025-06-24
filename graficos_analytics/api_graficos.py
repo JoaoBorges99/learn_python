@@ -37,6 +37,10 @@ def chamar_htmlErro ():
         conteudo = arquivo.read()
     return JSONResponse(content={"url": f"/{filepath}"})
 
+def converter_numerico(value):
+    value = str(value).strip()
+    return pd.to_numeric(value)
+
 @app.get("/")
 async def root():
     return {"message": "API de Gráficos Dinâmicos. Envie dados via POST para /graficos."}
@@ -49,10 +53,6 @@ async def favicon():
 async def gerar_grafico(request: Request):
     try:
         data = await request.json()
-        # Extrair campos extras do payload ou definir padrão
-        # titulo = data.pop("titulo", "Relatório de Gráficos Dinâmicos")
-        # emitente = data.pop("emitente", "Usuário Desconhecido")
-        # data_expiracao = data.pop("data_expiracao", "-")        
         titulo = 'Teste'
         emitente = 'Joaothegod'
         data_expiracao = '31/10/2023 23:59:59'
@@ -65,18 +65,18 @@ async def gerar_grafico(request: Request):
         for col in df.columns:
             if '__int' in col.lower():
                 for value in df[col]:
-                    int(value)
+                    value = converter_numerico(value)
             elif '__double' in col.lower() or '__perc' in col.lower():
                 for value in df[col]:
-                    float(value)
+                    value = converter_numerico(value)
             else:
-                for value in df[col]:
-                    str(value)
+                df[col] = df[col].astype(str)
 
             if '__no_metrics' in col.lower() or 'cod' in col.lower():
+                df[col] = df[col].astype(str)
                 dimensionais.append(col)
             else:
-                numericas.append(col)
+                numericas.append(col)  
 
         print("Dimensão:", dimensionais)
         print("Métrica:", numericas)
@@ -93,19 +93,22 @@ async def gerar_grafico(request: Request):
                         , y=met
                         , color=dim
                         , title=f"{formatar_nomeColuna(met)} por {formatar_nomeColuna(dim)}"
-                        , category_orders={dim: list(agrupado[dim])} 
+                        , category_orders={dim: list(agrupado[dim])}
                     )
                     html = fig.to_html(full_html=False, include_plotlyjs=False)
                     graficos_html.append(f'<div class="grafico">{html}</div>')
-                except Exception as e: 
+
+                except Exception as e:
                     print(f"Erro ao gerar gráfico para {dim} x {met}: {e}")
 
         if not graficos_html:
-            # ⚠️ Nenhum gráfico válido gerado: retorne página de erro
-            return chamar_htmlErro()
+            return JSONResponse(content={"error": "Nenhum gráfico válido gerado."}, status_code=400)
 
-        # Ler template HTML externo
+        # 4) Verificar e carregar template
         template_path = os.path.join(STATIC_DIR, "pagina_template/template.html")
+        if not os.path.exists(template_path):
+            return JSONResponse(content={"error": f"Template não encontrado em {template_path}"}, status_code=500)
+
         with open(template_path, "r", encoding="utf-8") as f:
             template = f.read()
 
@@ -125,4 +128,4 @@ async def gerar_grafico(request: Request):
 
     except Exception as e:
         print(f"Erro geral: {e}")
-        return chamar_htmlErro()
+        return JSONResponse(content={"error": "Falha ao processar o gráfico."}, status_code=500)
