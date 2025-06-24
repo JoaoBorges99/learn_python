@@ -17,6 +17,8 @@ def limpar_html ():
             if os.path.isfile(caminho_arquivo):
                 os.remove(caminho_arquivo)
                 print(f"Arquivo {caminho_arquivo} removido com sucesso.")
+            if os.path.isdir(caminho_arquivo):
+                continue
         except Exception as e:
             print(f"Erro ao remover {caminho_arquivo}: {e}")
 

@@ -73,7 +73,7 @@ async def gerar_grafico(request: Request):
                 for value in df[col]:
                     str(value)
 
-            if '__no_metrics' in col.lower():
+            if '__no_metrics' in col.lower() or 'cod' in col.lower():
                 dimensionais.append(col)
             else:
                 numericas.append(col)
@@ -86,7 +86,15 @@ async def gerar_grafico(request: Request):
             for met in numericas:
                 try:
                     agrupado = df.groupby(dim, as_index=False)[met].sum()
-                    fig = px.bar(agrupado, x=dim, y=met,title=f"{formatar_nomeColuna(met)} por {formatar_nomeColuna(dim)}")
+                    agrupado = agrupado.sort_values(by=met, ascending=True)
+                    fig = px.bar(
+                        agrupado
+                        , x=dim
+                        , y=met
+                        , color=dim
+                        , title=f"{formatar_nomeColuna(met)} por {formatar_nomeColuna(dim)}"
+                        , category_orders={dim: list(agrupado[dim])} 
+                    )
                     html = fig.to_html(full_html=False, include_plotlyjs=False)
                     graficos_html.append(f'<div class="grafico">{html}</div>')
                 except Exception as e: 
