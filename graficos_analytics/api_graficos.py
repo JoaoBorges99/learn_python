@@ -70,20 +70,27 @@ async def favicon():
 
 @app.post("/graficos")
 async def gerar_grafico(request: Request):
+    agora = pd.Timestamp.now()
+    expira = agora + pd.Timedelta(hours=1)
+
     try:
+        print('Carregando graficos...')
         data = await request.json()
+        
         # Converter os dados recebidos
         data_convertido = []
-        for item in data:
+        for item in json.loads(data['dados']):
             novo_item = {}
             for key, value in item.items():
                 novo_item[key] = converter_valor_por_sufixo(key, value)
             data_convertido.append(novo_item)
 
-        titulo = 'Teste'
-        emitente = 'Joaothegod'
-        data_expiracao = '31/10/2023 23:59:59'
+        titulo = f"Gráficos - {data['titulo']}"
+        emitente = data['matricula']
+        data_expiracao = expira.strftime("%d/%m/%Y %H:%M:%S")
         data_emissao = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M:%S")
+
+        print(f"grafico emitido por {emitente} em {data_emissao}, expira em {data_expiracao} do relatório {titulo}")
 
         # Usar o novo JSON convertido para o DataFrame e gráficos
         df = pd.DataFrame(data_convertido)
@@ -148,4 +155,7 @@ async def gerar_grafico(request: Request):
 
     except Exception as e:
         print(f"Erro geral: {e}")
-        return JSONResponse(content={"error": "Falha ao processar o gráfico."}, status_code=500)
+        return JSONResponse(content={"url": f"/error_page/erro.html"}, status_code=500)
+    finally:
+        print('Processamento de gráficos concluído.')
+        print('-----------------------------------')
