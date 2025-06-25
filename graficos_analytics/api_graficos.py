@@ -108,11 +108,12 @@ async def gerar_grafico(request: Request):
                         agrupado
                         , x=dim
                         , y=met
+                        , color=met
                         , labels={dim: formatar_nomeColuna(dim),  met: formatar_nomeColuna(met)}
                         , title=f"{formatar_nomeColuna(met)} por {formatar_nomeColuna(dim)}"
                         , category_orders={dim: list(agrupado[dim])}
                     )
-                    html = fig.to_html(full_html=False, include_plotlyjs=False)
+                    html = fig.to_html(full_html=False, include_plotlyjs='cdn')
                     graficos_html.append(f'<div class="grafico">{html}</div>')
 
                 except Exception as e:
