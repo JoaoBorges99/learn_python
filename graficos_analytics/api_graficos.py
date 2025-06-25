@@ -6,6 +6,7 @@ import pandas as pd
 import plotly.express as px
 import uuid
 import os
+import json
 
 app = FastAPI()
 
@@ -37,9 +38,27 @@ def chamar_htmlErro ():
         conteudo = arquivo.read()
     return JSONResponse(content={"url": f"/{filepath}"})
 
-def converter_numerico(value):
-    value = str(value).strip()
-    return pd.to_numeric(value)
+def converter_valor_por_sufixo(key, value):
+    if '__int' in key.lower():
+        try:
+            return int(float(str(value).replace(',', '.')))
+        except:
+            return 0
+    elif '__double' in key.lower() or '__perc' in key.lower():
+        try:
+            return float(str(value).replace(',', '.'))
+        except:
+            return 0.0
+    elif '__no_metrics' in key.lower() or 'cod' in key.lower():
+        return str(value).strip()
+    else:
+        try:
+            return float(str(value).replace(',', '.'))
+        except:
+            try:
+                return int(float(str(value).replace(',', '.')))
+            except:
+                return str(value).strip()
 
 @app.get("/")
 async def root():
@@ -53,45 +72,43 @@ async def favicon():
 async def gerar_grafico(request: Request):
     try:
         data = await request.json()
+        # Converter os dados recebidos
+        data_convertido = []
+        for item in data:
+            novo_item = {}
+            for key, value in item.items():
+                novo_item[key] = converter_valor_por_sufixo(key, value)
+            data_convertido.append(novo_item)
+
         titulo = 'Teste'
         emitente = 'Joaothegod'
         data_expiracao = '31/10/2023 23:59:59'
         data_emissao = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M:%S")
 
-        df = pd.DataFrame(data)
+        # Usar o novo JSON convertido para o DataFrame e gráficos
+        df = pd.DataFrame(data_convertido)
 
         numericas = []
         dimensionais = []
         for col in df.columns:
-            if '__int' in col.lower():
-                for value in df[col]:
-                    value = converter_numerico(value)
-            elif '__double' in col.lower() or '__perc' in col.lower():
-                for value in df[col]:
-                    value = converter_numerico(value)
-            else:
-                df[col] = df[col].astype(str)
-
             if '__no_metrics' in col.lower() or 'cod' in col.lower():
                 df[col] = df[col].astype(str)
                 dimensionais.append(col)
             else:
                 numericas.append(col)  
 
-        print("Dimensão:", dimensionais)
-        print("Métrica:", numericas)
 
         graficos_html = []
         for dim in dimensionais:
             for met in numericas:
                 try:
                     agrupado = df.groupby(dim, as_index=False)[met].sum()
-                    agrupado = agrupado.sort_values(by=met, ascending=True)
+                    # agrupado = agrupado.sort_values(by=met, ascending=True)
                     fig = px.bar(
                         agrupado
                         , x=dim
                         , y=met
-                        , color=dim
+                        , labels={dim: formatar_nomeColuna(dim),  met: formatar_nomeColuna(met)}
                         , title=f"{formatar_nomeColuna(met)} por {formatar_nomeColuna(dim)}"
                         , category_orders={dim: list(agrupado[dim])}
                     )
@@ -124,7 +141,9 @@ async def gerar_grafico(request: Request):
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(pagina)
 
-        return JSONResponse(content={"url": f"/static/{filename}"})
+        return JSONResponse(content={
+            "url": f"/static/{filename}"
+        })
 
     except Exception as e:
         print(f"Erro geral: {e}")
