@@ -7,8 +7,12 @@ import plotly.express as px
 import uuid
 import os
 import json
+from pydantic import BaseModel, Field
+import logging
+from cachetools import TTLCache
 
 app = FastAPI()
+cache_request = TTLCache(maxsize=1000, ttl=25)
 
 STATIC_DIR = "static"
 os.makedirs(STATIC_DIR, exist_ok=True)
@@ -75,6 +79,12 @@ def getTipoGrafico(tipo:str):
         case _:
             return px.bar
 
+# Modelo Pydantic para os dados recebidos
+class GraficoData(BaseModel):
+    titulo: str = Field(..., max_length=100)
+    matricula: str = Field(..., max_length=50)
+    dados: str  # JSON string, validado depois
+
 @app.get("/")
 async def root():
     return {"message": "API de Gráficos Dinâmicos. Envie dados via POST para /graficos."}
@@ -84,17 +94,35 @@ async def favicon():
     return FileResponse("favicon.ico")
 
 @app.post("/graficos")
-async def gerar_grafico(request: Request):
+async def gerar_grafico(request: Request, payload: GraficoData):
     agora = pd.Timestamp.now()
     expira = agora + pd.Timedelta(hours=1)
 
+    user = request.client.host if request.client is not None else None
+
+    if user is None:
+        return JSONResponse(content={"error": "Não foi possivel validar usuario"}, status_code=401)
+
+    if user in cache_request:
+        return JSONResponse(content={"error": "Limite de requisições por minuto alcançado!"}, status_code=429)
+    
+    cache_request[user] = True
+
     try:
         print('Carregando graficos...')
-        data = await request.json()
+        data = payload.dict()
+        
+        # Validar tamanho do payload
+        if len(data['dados']) > 100_000:
+            return JSONResponse(content={"error": "Payload muito grande."}, status_code=413)
         
         # Converter os dados recebidos
         data_convertido = []
-        for item in json.loads(data['dados']):
+        try:
+            dados_json = json.loads(data['dados'])
+        except Exception:
+            return JSONResponse(content={"error": "Formato de dados inválido."}, status_code=400)
+        for item in dados_json:
             novo_item = {}
             for key, value in item.items():
                 novo_item[key] = converter_valor_por_sufixo(key, value)
@@ -126,7 +154,7 @@ async def gerar_grafico(request: Request):
                 try:
                     agrupado = df.groupby(dim, as_index=False)[met].sum()
                     # agrupado = agrupado.sort_values(by=met, ascending=True)
-                    fig = px.bar(
+                    fig = grafico(
                         agrupado
                         , x=dim
                         , y=met
@@ -135,7 +163,7 @@ async def gerar_grafico(request: Request):
                         , title=f"{formatar_nomeColuna(met)} por {formatar_nomeColuna(dim)}"
                         , category_orders={dim: list(agrupado[dim])}
                     )
-                    html = fig.to_html(full_html=False, include_plotlyjs='cdn')
+                    html = fig.to_html(full_html=False, include_plotlyjs=False)
                     graficos_html.append(f'<div class="grafico">{html}</div>')
                 except Exception as e:
                     print(f"Erro ao gerar gráfico para {dim} x {met}: {e}")
@@ -168,8 +196,9 @@ async def gerar_grafico(request: Request):
         })
 
     except Exception as e:
-        print(f"Erro geral: {e}")
-        return JSONResponse(content={"url": f"/error_page/erro.html"}, status_code=500)
+        logging.basicConfig(filename='error.log', level=logging.ERROR)
+        logging.error(f"Erro geral: {e}")
+        return JSONResponse(content={"error": "Erro interno ao processar a requisição."}, status_code=500)
     finally:
         print('Processamento de gráficos concluído.')
         print('-----------------------------------')
