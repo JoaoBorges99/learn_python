@@ -1,4 +1,5 @@
 from imports_api import*
+from autenticacao_hmac import auth_request
 
 app = FastAPI()
 cache_request = TTLCache(maxsize=1000, ttl=25)
@@ -81,6 +82,14 @@ async def root():
 @app.get("/favicon.ico")
 async def favicon():
     return FileResponse("favicon.ico")
+
+@app.post("/auth")
+async def protection(request:Request):
+    body = await request.body()
+    assinatura_client = request.headers.get("X-HMAC-SIGNATURE")
+
+    auth_request(body, assinatura_cliente=assinatura_client) 
+    return {"success": "Autenticado com sucesso"}  
 
 @app.post("/graficos")
 async def gerar_grafico(request: Request, payload: GraficoData):

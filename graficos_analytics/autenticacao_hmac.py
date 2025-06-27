@@ -1,4 +1,24 @@
 import hmac
 import hashlib
 import base64
-from datetime import datetime
+import os
+from dotenv import load_dotenv
+from fastapi import HTTPException
+
+load_dotenv()
+
+def auth_request (dados, assinatura_cliente:str|None):
+    chave = os.getenv("SECRET_KEY")
+
+    if chave is None or assinatura_cliente is None:
+        raise HTTPException(detail={"error": "Erro interno do servidor"}, status_code=500)
+    try:
+        chave.strip()
+        server_security_key = hmac.new(chave.encode(), dados, hashlib.sha256).digest()
+        server_signature = base64.b64encode(server_security_key).decode()
+        comparacao = hmac.compare_digest(server_signature, assinatura_cliente)
+        if not assinatura_cliente or not comparacao:
+            raise HTTPException(detail={"error": "Assinatura inválida"}, status_code=200)
+        return True
+    except Exception as e:
+        raise HTTPException(detail={"error":"Não foi possivel autenticar"}, status_code=401)

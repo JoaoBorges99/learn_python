@@ -1,8 +1,9 @@
-# Ignora tudo na pasta
+# # Ignora tudo na pasta
 static/*
 
-# Mas NÃO ignora a subpasta específica
+# # Mas NÃO ignora a subpasta específica
 !static/pagina_template/
 
-# E para garantir, inclui tudo dentro da subpasta
+# # E para garantir, inclui tudo dentro da subpasta
 !static/pagina_template/**
+.env

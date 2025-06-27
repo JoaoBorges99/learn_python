@@ -7,4 +7,5 @@ uvicorn
 anaconda
 rocketry
 psutil
+dotenv
 pydantic==1.10.10
