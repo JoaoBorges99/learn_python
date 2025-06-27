@@ -60,6 +60,21 @@ def converter_valor_por_sufixo(key, value):
             except:
                 return str(value).strip()
 
+def getTipoGrafico(tipo:str):
+    match tipo.lower():
+        case "barra":
+            return px.bar
+        case "linha":
+            return px.line
+        case "area":
+            return px.area
+        case "funil":
+            return px.funnel
+        case "scatter":
+            return px.scatter
+        case _:
+            return px.bar
+
 @app.get("/")
 async def root():
     return {"message": "API de Gráficos Dinâmicos. Envie dados via POST para /graficos."}
@@ -89,6 +104,7 @@ async def gerar_grafico(request: Request):
         emitente = data['matricula']
         data_expiracao = expira.strftime("%d/%m/%Y %H:%M:%S")
         data_emissao = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M:%S")
+        grafico = getTipoGrafico('scatter')
 
         print(f"grafico emitido por {emitente} em {data_emissao}, expira em {data_expiracao} do relatório {titulo}")
 
@@ -103,7 +119,6 @@ async def gerar_grafico(request: Request):
                 dimensionais.append(col)
             else:
                 numericas.append(col)  
-
 
         graficos_html = []
         for dim in dimensionais:
@@ -122,7 +137,6 @@ async def gerar_grafico(request: Request):
                     )
                     html = fig.to_html(full_html=False, include_plotlyjs='cdn')
                     graficos_html.append(f'<div class="grafico">{html}</div>')
-
                 except Exception as e:
                     print(f"Erro ao gerar gráfico para {dim} x {met}: {e}")
 
@@ -132,7 +146,7 @@ async def gerar_grafico(request: Request):
         # 4) Verificar e carregar template
         template_path = os.path.join(STATIC_DIR, "pagina_template/template.html")
         if not os.path.exists(template_path):
-            return JSONResponse(content={"error": f"Template não encontrado em {template_path}"}, status_code=500)
+            return JSONResponse(content={"error": f"Não foi possivel criar a pagina"}, status_code=500)
 
         with open(template_path, "r", encoding="utf-8") as f:
             template = f.read()
