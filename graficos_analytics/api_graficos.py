@@ -108,7 +108,7 @@ async def gerar_grafico(request: Request, payload: GraficoData):
 
     try:
         print('Carregando graficos...')
-        data = payload.dict()
+        data = dict(payload)
         
         # Validar tamanho do payload
         if len(data['dados']) > 100_000:
