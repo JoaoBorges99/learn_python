@@ -1,9 +1,12 @@
-# # Ignora tudo na pasta
-static/*
+# Ignora tudo dentro da pasta static
+graficos_analytics/static/*
 
-# # Mas NÃO ignora a subpasta específica
-!static/pagina_template/
+# Não ignora a pasta static em si
+!graficos_analytics/static/
 
-# # E para garantir, inclui tudo dentro da subpasta
-!static/pagina_template/**
+# Não ignora a subpasta desejada e seu conteúdo
+!graficos_analytics/static/pagina_template/
+!graficos_analytics/static/pagina_template/**
+
+# Ignorar arquivo .env
 .env
