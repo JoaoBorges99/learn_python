@@ -69,11 +69,20 @@ def getTipoGrafico(tipo:str):
         case _:
             return px.bar
 
+def retornarAgrupamentosSelecionados (agrupamentos:list):
+    novo_agg = []
+    novo_met = []
+    for agg in agrupamentos:
+        novo_agg.append(agg['agrupamento'])
+        novo_met.append(agg['metrica'])
+    print(agrupamentos)
+
 # Modelo Pydantic para os dados recebidos
 class GraficoData(BaseModel):
     titulo: str = Field(..., max_length=100)
     matricula: str = Field(..., max_length=50)
     dados: str  # JSON string, validado depois
+    agrupamentos: list
 
 @app.get("/")
 async def root():
@@ -105,10 +114,9 @@ async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool
     try:
         print('Carregando graficos...')
         data = dict(payload)
-        
-        # Validar tamanho do payload
-        if len(data['dados']) > 100_000:
-            return JSONResponse(content={"error": "Payload muito grande."}, status_code=413)
+        # # Validar tamanho do payload
+        # if len(data['dados']) > 100_000:
+        #     return JSONResponse(content={"error": "Payload muito grande."}, status_code=413)
         
         # Converter os dados recebidos
         data_convertido = []
@@ -126,6 +134,7 @@ async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool
         emitente = data['matricula']
         data_expiracao = expira.strftime("%d/%m/%Y %H:%M:%S")
         data_emissao = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M:%S")
+        agrupamentos = data['agrupamentos']
         grafico = getTipoGrafico('scatter')
 
         print(f"grafico emitido por {emitente} em {data_emissao}, expira em {data_expiracao} do relatório {titulo}")
@@ -135,12 +144,15 @@ async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool
 
         numericas = []
         dimensionais = []
+        for agg in agrupamentos:
+            if agg['agrupamento'] not in dimensionais:
+                dimensionais.append(agg['agrupamento'])
+            if agg['metrica'] not in numericas:                
+                numericas.append(agg['metrica'])
+
         for col in df.columns:
             if '__no_metrics' in col.lower() or 'cod' in col.lower():
                 df[col] = df[col].astype(str)
-                dimensionais.append(col)
-            else:
-                numericas.append(col)  
 
         graficos_html = []
         for dim in dimensionais:
