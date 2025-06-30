@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -11,4 +11,4 @@ from pydantic import BaseModel, Field
 import logging
 from cachetools import TTLCache
 
-__all__ = ["os", "json", "uuid", "logging", "TTLCache", "pd", "px", "BaseModel", "FileResponse", "StaticFiles", "JSONResponse", "FastAPI", "Request", "Field"]
+__all__ = ["os", "json", "uuid", "logging", "TTLCache", "pd", "px", "BaseModel", "FileResponse", "StaticFiles", "JSONResponse", "FastAPI", "Request", "Field", "Depends"]

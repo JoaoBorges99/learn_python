@@ -84,15 +84,11 @@ async def favicon():
     return FileResponse("favicon.ico")
 
 @app.post("/auth")
-async def protection(request:Request):
-    body = await request.body()
-    assinatura_client = request.headers.get("X-HMAC-SIGNATURE")
-
-    auth_request(body, assinatura_cliente=assinatura_client) 
+async def protection(validacao: bool = Depends(auth_request)):
     return {"success": "Autenticado com sucesso"}  
 
 @app.post("/graficos")
-async def gerar_grafico(request: Request, payload: GraficoData):
+async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool = Depends(auth_request)):
     agora = pd.Timestamp.now()
     expira = agora + pd.Timedelta(hours=1)
 
