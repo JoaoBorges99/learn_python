@@ -68,21 +68,36 @@ def getTipoGrafico(tipo:str):
             return px.scatter
         case _:
             return px.bar
+        
+def gerar_analise(df: pd.DataFrame, colunas: list):
+    texto = ""
+    for col in colunas:
+        media = df[col].mean()
+        mediana = df[col].median()
+        desvio = df[col].std()
+        maximo = df[col].max()
+        minimo = df[col].min()
 
-def retornarAgrupamentosSelecionados (agrupamentos:list):
-    novo_agg = []
-    novo_met = []
-    for agg in agrupamentos:
-        novo_agg.append(agg['agrupamento'])
-        novo_met.append(agg['metrica'])
-    print(agrupamentos)
+        texto += f"\n🔹 **{col.upper()}**\n"
+        texto += f" - Média: {media:.2f}\n"
+        texto += f" - Mediana: {mediana:.2f}\n"
+        texto += f" - Mínimo: {minimo}, Máximo: {maximo}\n"
+        texto += f" - Desvio padrão: {desvio:.2f}\n"
+
+    if desvio > media * 0.5:
+        texto += " - Observação: alta dispersão dos dados.\n"
+    else:
+        texto += " - Observação: dados relativamente concentrados.\n"
+
+    return texto
 
 # Modelo Pydantic para os dados recebidos
 class GraficoData(BaseModel):
     titulo: str = Field(..., max_length=100)
     matricula: str = Field(..., max_length=50)
-    dados: str  # JSON string, validado depois
+    dados: str
     agrupamentos: list
+    grafico: str
 
 @app.get("/")
 async def root():
@@ -114,10 +129,7 @@ async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool
     try:
         print('Carregando graficos...')
         data = dict(payload)
-        # # Validar tamanho do payload
-        # if len(data['dados']) > 100_000:
-        #     return JSONResponse(content={"error": "Payload muito grande."}, status_code=413)
-        
+
         # Converter os dados recebidos
         data_convertido = []
         try:
@@ -135,7 +147,7 @@ async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool
         data_expiracao = expira.strftime("%d/%m/%Y %H:%M:%S")
         data_emissao = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M:%S")
         agrupamentos = data['agrupamentos']
-        grafico = getTipoGrafico('scatter')
+        grafico = getTipoGrafico(data['grafico'])
 
         print(f"grafico emitido por {emitente} em {data_emissao}, expira em {data_expiracao} do relatório {titulo}")
 
@@ -149,6 +161,8 @@ async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool
                 dimensionais.append(agg['agrupamento'])
             if agg['metrica'] not in numericas:                
                 numericas.append(agg['metrica'])
+        
+        analise = gerar_analise(df, numericas)
 
         for col in df.columns:
             if '__no_metrics' in col.lower() or 'cod' in col.lower():
