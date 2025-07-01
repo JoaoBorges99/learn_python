@@ -78,16 +78,17 @@ def gerar_analise(df: pd.DataFrame, colunas: list):
         maximo = df[col].max()
         minimo = df[col].min()
 
-        texto += f"\n🔹 **{col.upper()}**\n"
-        texto += f" - Média: {media:.2f}\n"
-        texto += f" - Mediana: {mediana:.2f}\n"
-        texto += f" - Mínimo: {minimo}, Máximo: {maximo}\n"
-        texto += f" - Desvio padrão: {desvio:.2f}\n"
-
-    if desvio > media * 0.5:
-        texto += " - Observação: alta dispersão dos dados.\n"
-    else:
-        texto += " - Observação: dados relativamente concentrados.\n"
+        texto += f"""
+        <li">
+            <b>🔹 {formatar_nomeColuna(col.upper())}</a><br>
+            <span">Média:</span> <span style="color:#00796b;">{media:.2f}</span>
+            <span">Mediana:</span> <span style="color:#00796b;">{mediana:.2f}</span>
+            <span">Mínimo:</span> <span style="color:#00796b;">{minimo}</span>,
+            <span">Máximo:</span> <span style="color:#00796b;">{maximo}</span>
+            <span">Desvio padrão:</span> <span style="color:#00796b;">{desvio:.2f}</span><br>
+            Observação: {"alta dispersão dos dados." if desvio > media * 0.5 else "dados relativamente concentrados."}
+        </li>
+        """
 
     return texto
 
@@ -184,7 +185,15 @@ async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool
                         , category_orders={dim: list(agrupado[dim])}
                     )
                     html = fig.to_html(full_html=False, include_plotlyjs=False)
-                    graficos_html.append(f'<div class="grafico">{html}</div>')
+                    analise_grafico = gerar_analise(agrupado, [met])
+                    graficos_html.append(
+                        f'''
+                        <div class="grafico">
+                            {html}
+                            <div class="analise-grafico">{analise_grafico}</div>
+                        </div>
+                        '''
+                    )
                 except Exception as e:
                     print(f"Erro ao gerar gráfico para {dim} x {met}: {e}")
 

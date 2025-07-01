@@ -4,6 +4,15 @@ body {
     margin: 0;
     padding: 0;
 }
+
+.analise-grafico {
+    background: #f7f7fa;
+    border-left: 4px solid #0074d9;
+    font-size: 1em;
+    color: #333;
+    white-space: pre-wrap;
+}
+
 .header {
     background: linear-gradient(90deg, #4f8cff 0%, #6dd5ed 100%);
     color: #fff;
