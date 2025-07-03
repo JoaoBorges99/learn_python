@@ -1,29 +1,19 @@
 from imports_api import*
 from autenticacao_hmac import auth_request
+from funcoes_api import*
 
-app = FastAPI()
-cache_request = TTLCache(maxsize=1000, ttl=25)
+app = FastAPI(
+    title="API Graphic Generator",
+    description="Gere graficos e analise através de JSON.",
+    version="1.0.0"
+)
+
+cache_request = TTLCache(maxsize=1000, ttl=10)
 
 STATIC_DIR = "static"
 os.makedirs(STATIC_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.mount("/error_page", StaticFiles(directory="error_page"), name="error_page")
-
-def formatar_nomeColuna(text: str):
-    text = str(text).upper().replace('__PERC', '_%')
-    text = str(text).upper().replace('__INT_STRING', '')
-    text = str(text).upper().replace('__STRING', '')
-    text = str(text).upper().replace('__DOUBLE', '')
-    text = str(text).upper().replace('__INT', '')
-    text = str(text).upper().replace('__NO_METRICS', '')
-    text = str(text).upper().replace('__NOCHARTAREA', '')
-    text = str(text).upper().replace('__INVISIBLE', '')
-    text = str(text).upper().replace('__DONTSUM', '')
-    text = str(text).upper().replace('__FREEZE', '')
-    temp = text.split('__')
-    text = temp[0]
-    text = str(text).replace('_', ' ')
-    return text.strip()
 
 def chamar_htmlErro ():
     filename = "erro.html"
@@ -31,66 +21,6 @@ def chamar_htmlErro ():
     with open(filepath, 'r') as arquivo:
         conteudo = arquivo.read()
     return JSONResponse(content={"url": f"/{filepath}"})
-
-def converter_valor_por_sufixo(key, value):
-    if '__int' in key.lower():
-        try:
-            return int(float(str(value).replace(',', '.')))
-        except:
-            return 0
-    elif '__double' in key.lower() or '__perc' in key.lower():
-        try:
-            return float(str(value).replace(',', '.'))
-        except:
-            return 0.0
-    elif '__no_metrics' in key.lower() or 'cod' in key.lower():
-        return str(value).strip()
-    else:
-        try:
-            return float(str(value).replace(',', '.'))
-        except:
-            try:
-                return int(float(str(value).replace(',', '.')))
-            except:
-                return str(value).strip()
-
-def getTipoGrafico(tipo:str):
-    match tipo.lower():
-        case "barra":
-            return px.bar
-        case "linha":
-            return px.line
-        case "area":
-            return px.area
-        case "funil":
-            return px.funnel
-        case "scatter":
-            return px.scatter
-        case _:
-            return px.bar
-        
-def gerar_analise(df: pd.DataFrame, colunas: list):
-    texto = ""
-    for col in colunas:
-        media = df[col].mean()
-        mediana = df[col].median()
-        desvio = df[col].std()
-        maximo = df[col].max()
-        minimo = df[col].min()
-
-        texto += f"""
-        <li">
-            <b>🔹 {formatar_nomeColuna(col.upper())}</a><br>
-            <span">Média:</span> <span style="color:#00796b;">{media:.2f}</span>
-            <span">Mediana:</span> <span style="color:#00796b;">{mediana:.2f}</span>
-            <span">Mínimo:</span> <span style="color:#00796b;">{minimo}</span>,
-            <span">Máximo:</span> <span style="color:#00796b;">{maximo}</span>
-            <span">Desvio padrão:</span> <span style="color:#00796b;">{desvio:.2f}</span><br>
-            Observação: {"alta dispersão dos dados." if desvio > media * 0.5 else "dados relativamente concentrados."}
-        </li>
-        """
-
-    return texto
 
 # Modelo Pydantic para os dados recebidos
 class GraficoData(BaseModel):
@@ -106,7 +36,7 @@ async def root():
 
 @app.get("/favicon.ico")
 async def favicon():
-    return FileResponse("favicon.ico")
+    return FileResponse("static/pagina_template/favicon.ico")
 
 @app.post("/auth")
 async def protection(validacao: bool = Depends(auth_request)):
@@ -162,11 +92,9 @@ async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool
                 dimensionais.append(agg['agrupamento'])
             if agg['metrica'] not in numericas:                
                 numericas.append(agg['metrica'])
-        
-        analise = gerar_analise(df, numericas)
 
         for col in df.columns:
-            if '__no_metrics' in col.lower() or 'cod' in col.lower():
+            if validar_tipo_coluna(col):
                 df[col] = df[col].astype(str)
 
         graficos_html = []
@@ -174,7 +102,6 @@ async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool
             for met in numericas:
                 try:
                     agrupado = df.groupby(dim, as_index=False)[met].sum()
-                    # agrupado = agrupado.sort_values(by=met, ascending=True)
                     fig = grafico(
                         agrupado
                         , x=dim
