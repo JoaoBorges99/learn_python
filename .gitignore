@@ -10,3 +10,5 @@ graficos_analytics/static/*
 
 # Ignorar arquivo .env
 .env
+
+**/.ipynb_checkpoints/
