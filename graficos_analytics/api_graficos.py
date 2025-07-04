@@ -2,6 +2,7 @@ from imports_api import*
 from autenticacao_hmac import auth_request
 from funcoes_api import*
 from excel_graficos import get_excel
+import csv
 
 app = FastAPI(
     title="API Graphic Generator",
@@ -163,19 +164,51 @@ async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool
 @app.post("/graficos_excel")
 async def gerar_grafico_com_excel(file: UploadFile = File()):
     try:
-        file_location = f"temp/{file.filename}"
         os.makedirs("temp", exist_ok=True)
+        file_location = f"temp/{file.filename}"
+        
+        dados = []
 
-        with open(file_location, "wb") as f:
-            shutil.copyfileobj(file.file, f)
+        with open(file_location, "r") as f:
+            reader = csv.DictReader(f, delimiter = ';')
+            dados = list(reader)
+        
+        new_file = f"temp/new_{file.filename}"
+
+        with open(new_file, "w", encoding="UTF8") as f:
+            write = csv.writer(f)
+            write.writerow(dados[0].keys())
+            for row in dados:
+                write.writerow(row.values())
 
         df = pd.DataFrame()
-        df = get_excel(file_location)
+        df = get_excel(new_file)
+
+        dimecional = []
+        numerica = []
+        graficos = []
 
         if df is None:
             return JSONResponse(content={"error": "Falha ao carregar arquivo, valide as extenções."}, status_code=409)
         else:
-            df.head()
-    except:
-        return JSONResponse(content={"error": "Falha ao gerar graficos."}, status_code=409)
+            for col in df.columns:
+                if validar_tipo_coluna(col):
+                    dimecional.append(col)
+                    df[col] = df[col].astype(str)
+                else:
+                    df[col]= 0
+                    numerica.append(col)
+            
+            for dim in dimecional:
+                for num in numerica:
+                    fig = px.bar(df,x=dim, y=num,title='teste')
+                    html = fig.to_html(include_plotlyjs=False)
+                    graficos.append(html)
+
+            if graficos:
+                return HTMLResponse(content=graficos[0])
+            else:
+                return JSONResponse(content={"erro" : "Nenhum grafico foi gerado apartir desse excel"}, status_code=500)
+    except Exception as e:
+        return JSONResponse(content={"error": f"Falha ao gerar graficos.\n {e}"}, status_code=409)
  

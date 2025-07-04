@@ -12,3 +12,4 @@ graficos_analytics/static/*
 .env
 
 **/.ipynb_checkpoints/
+**/temp

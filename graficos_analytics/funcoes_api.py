@@ -18,8 +18,8 @@ def formatar_nomeColuna(text: str):
     return text.strip()
 
 def validar_tipo_coluna (nome:str):
-    chave = nome.lower()
-    return chave in ("__no_metrics", "cod", "nome", "__string", "__nochartarea")
+    chave = nome.strip().lower()
+    return chave in ("__no_metrics", "cod", "nome", "__string", "__nochartarea", "descricao",)
 
 def converter_valor_por_sufixo(key, value):
     if '__int' in key.lower():
