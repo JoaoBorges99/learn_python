@@ -1,6 +1,7 @@
 from imports_api import*
 from autenticacao_hmac import auth_request
 from funcoes_api import*
+from excel_graficos import get_excel
 
 app = FastAPI(
     title="API Graphic Generator",
@@ -158,3 +159,23 @@ async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool
     finally:
         print('Processamento de gráficos concluído.')
         print('-----------------------------------')
+
+@app.post("/graficos_excel")
+async def gerar_grafico_com_excel(file: UploadFile = File()):
+    try:
+        file_location = f"temp/{file.filename}"
+        os.makedirs("temp", exist_ok=True)
+
+        with open(file_location, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+
+        df = pd.DataFrame()
+        df = get_excel(file_location)
+
+        if df is None:
+            return JSONResponse(content={"error": "Falha ao carregar arquivo, valide as extenções."}, status_code=409)
+        else:
+            df.head()
+    except:
+        return JSONResponse(content={"error": "Falha ao gerar graficos."}, status_code=409)
+ 

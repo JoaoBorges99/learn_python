@@ -13,6 +13,7 @@ services:
       - ../imports_api.py:/app/imports_api.py
       - ../autenticacao_hmac.py:/app/autenticacao_hmac.py
       - ../funcoes_api.py:/app/funcoes_api.py
+      - ../excel_graficos.py:/app/excel_graficos.py
     command: ["uvicorn", "api_graficos:app", "--host=0.0.0.0", "--port=8000", "--reload"]
 
   limpar_html:
