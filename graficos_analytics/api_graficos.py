@@ -185,17 +185,27 @@ async def gerar_grafico_com_excel(file: UploadFile = File()):
                     dimecional.append(col)
                     df[col] = df[col].astype(str)
                 else:
-                    df[col]= 0
                     numerica.append(col)
             
             for dim in dimecional:
                 for num in numerica:
-                    fig = px.bar(df,x=dim, y=num,title='teste')
-                    html = fig.to_html(include_plotlyjs=False)
-                    graficos.append(html)
+                    fig = px.bar(df, x=dim, y=num, title=f'{num} por {dim}')
+                    html = fig.to_html(full_html=False, include_plotlyjs=False)
+                    graficos.append(f'<div class="grafico">{html}</div>')
 
             if graficos:
-                return HTMLResponse(content=graficos[0],)
+                template_path = os.path.join(STATIC_DIR, "pagina_template/template_excel.html")
+
+                with open(template_path, "r", encoding="utf-8") as f:
+                    template = f.read()
+
+                pagina = template.replace("{{graficos}}", "\n".join(graficos))
+                pagina_html_nome = f"grafico_excel_{uuid.uuid4().hex}.html"
+                caminho_html = os.path.join(STATIC_DIR, pagina_html_nome)
+                
+                with open(caminho_html, "w", encoding="utf-8") as f:
+                    f.write(pagina)
+                return JSONResponse(content={"url": f"/static/{caminho_html}"})
             else:
                 return JSONResponse(content={"erro" : "Nenhum grafico foi gerado apartir desse excel"}, status_code=500)
     except Exception as e:
