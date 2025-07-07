@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta charset="UTF-8">
+        <title>Upload de Arquivo Excel</title>
+        <link rel="stylesheet" href="/static/pagina_template/graficos.css">
+        <script src="upload_excel.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Upload de Excel</h1>
+            <form id="uploadForm">
+                <input type="file" id="fileInput" name="file" accept=".xlsx,.xls,.csv" required>
+                <button type="submit">Enviar e Gerar Gráficos</button>
+            </form>
+            <div class="msg" id="msg"></div>
+        </div>
+        <script src="/static/pagina_template/upload_excel.js"></script>
+    </body>
+</html>

@@ -32,13 +32,19 @@ class GraficoData(BaseModel):
     agrupamentos: list
     grafico: str
 
-@app.get("/")
-async def root():
-    return {"message": "API de Gráficos Dinâmicos. Envie dados via POST para /graficos."}
+@app.get("/", include_in_schema=False)
+async def index():
+    template_path = os.path.join(STATIC_DIR, "pagina_template/index.html")
+    return FileResponse(template_path, media_type="text/html")
 
 @app.get("/favicon.ico")
 async def favicon():
     return FileResponse("static/pagina_template/favicon.ico")
+
+@app.get("/upload_excel", include_in_schema=False)
+async def upload_excel_page():
+    template_path = os.path.join(STATIC_DIR, "pagina_template/upload_excel.html")
+    return FileResponse(template_path, media_type="text/html")
 
 @app.post("/auth")
 async def protection(validacao: bool = Depends(auth_request)):
@@ -202,10 +208,10 @@ async def gerar_grafico_com_excel(file: UploadFile = File()):
                 pagina = template.replace("{{graficos}}", "\n".join(graficos))
                 pagina_html_nome = f"grafico_excel_{uuid.uuid4().hex}.html"
                 caminho_html = os.path.join(STATIC_DIR, pagina_html_nome)
-                
+
                 with open(caminho_html, "w", encoding="utf-8") as f:
                     f.write(pagina)
-                return JSONResponse(content={"url": f"/static/{caminho_html}"})
+                return JSONResponse(content={"url": f"/static/{pagina_html_nome}"})         
             else:
                 return JSONResponse(content={"erro" : "Nenhum grafico foi gerado apartir desse excel"}, status_code=500)
     except Exception as e:
