@@ -1,7 +1,7 @@
 from imports_api import*
 from autenticacao_hmac import auth_request
 from funcoes_api import*
-from excel_graficos import get_excel
+from excel_graficos import*
 import csv
 
 app = FastAPI(
@@ -166,23 +166,12 @@ async def gerar_grafico_com_excel(file: UploadFile = File()):
     try:
         os.makedirs("temp", exist_ok=True)
         file_location = f"temp/{file.filename}"
-        
-        dados = []
 
-        with open(file_location, "r") as f:
-            reader = csv.DictReader(f, delimiter = ';')
-            dados = list(reader)
-        
-        new_file = f"temp/new_{file.filename}"
+        with open(file_location, "wb") as f:
+            content = await file.read()
+            f.write(content)
 
-        with open(new_file, "w", encoding="UTF8") as f:
-            write = csv.writer(f)
-            write.writerow(dados[0].keys())
-            for row in dados:
-                write.writerow(row.values())
-
-        df = pd.DataFrame()
-        df = get_excel(new_file)
+        df = get_file_dataframe(file_location)
 
         dimecional = []
         numerica = []
@@ -206,7 +195,7 @@ async def gerar_grafico_com_excel(file: UploadFile = File()):
                     graficos.append(html)
 
             if graficos:
-                return HTMLResponse(content=graficos[0])
+                return HTMLResponse(content=graficos[0],)
             else:
                 return JSONResponse(content={"erro" : "Nenhum grafico foi gerado apartir desse excel"}, status_code=500)
     except Exception as e:

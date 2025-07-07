@@ -8,5 +8,6 @@ anaconda
 rocketry
 psutil
 dotenv
+xlrd
 pydantic==1.10.10
 python-multipart
