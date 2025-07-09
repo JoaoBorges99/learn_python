@@ -2,7 +2,6 @@ from imports_api import*
 from autenticacao_hmac import auth_request
 from funcoes_api import*
 from excel_graficos import*
-import csv
 
 app = FastAPI(
     title="API Graphic Generator",
@@ -46,9 +45,20 @@ async def upload_excel_page():
     template_path = os.path.join(STATIC_DIR, "pagina_template/upload_excel.html")
     return FileResponse(template_path, media_type="text/html")
 
-@app.post("/auth")
-async def protection(validacao: bool = Depends(auth_request)):
-    return {"success": "Autenticado com sucesso"}  
+@app.get('/doc_rel/{relatorio}', response_class=HTMLResponse)
+async def get_readme_doc(relatorio:str):
+    teste = f'financeiro/evolucao_da_inadimplencia/querys/{relatorio}'
+    url_api_php = f"https://analytics.agnconsultoria.com.br/api/get_doc.php?rel_doc={teste}"
+    try:
+        response = requests.get(url_api_php)
+        if response.status_code == 200:
+            print(url_api_php)
+            html = markdown.markdown(response.text)
+            return html
+        else:
+            raise
+    except:
+        return JSONResponse(content={"erro": "Não foi possivel buscar a documentação desse relatorio"}, status_code=400)
 
 @app.post("/graficos")
 async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool = Depends(auth_request)):

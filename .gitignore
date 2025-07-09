@@ -13,3 +13,4 @@ graficos_analytics/static/*
 
 **/.ipynb_checkpoints/
 **/temp
+**/ambiente_python_global

@@ -9,5 +9,7 @@ rocketry
 psutil
 dotenv
 xlrd
+requests
+markdown
 pydantic==1.10.10
 python-multipart
