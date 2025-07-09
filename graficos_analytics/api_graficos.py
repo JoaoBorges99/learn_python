@@ -33,20 +33,44 @@ class GraficoData(BaseModel):
 
 @app.get("/", include_in_schema=False)
 async def index():
+    """
+    Página inicial da aplicação.
+
+    Retorna o arquivo HTML da página inicial.
+    """
     template_path = os.path.join(STATIC_DIR, "pagina_template/index.html")
     return FileResponse(template_path, media_type="text/html")
 
-@app.get("/favicon.ico")
+@app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
+    """
+    Retorna o favicon da aplicação.
+
+    Retorna o arquivo favicon.ico.
+    """    
     return FileResponse("static/pagina_template/favicon.ico")
 
 @app.get("/upload_excel", include_in_schema=False)
 async def upload_excel_page():
+    """
+    Página de upload de arquivos Excel.
+
+    Retorna o HTML para upload de arquivos Excel.
+    """    
     template_path = os.path.join(STATIC_DIR, "pagina_template/upload_excel.html")
     return FileResponse(template_path, media_type="text/html")
 
-@app.get('/doc_rel/{relatorio}', response_class=HTMLResponse)
-async def get_readme_doc(relatorio:str):
+@app.get('/doc_rel/{relatorio}', response_class=HTMLResponse,)
+async def get_readme_doc(relatorio:str,):
+    
+    """
+    Busca a documentação de um relatório específico.
+
+    - **relatorio**: Nome do relatório a ser buscado.
+
+    Retorna a documentação em HTML do relatório solicitado.
+    """
+    
     teste = f'financeiro/evolucao_da_inadimplencia/querys/{relatorio}'
     url_api_php = f"https://analytics.agnconsultoria.com.br/api/get_doc.php?rel_doc={teste}"
     try:
@@ -62,6 +86,19 @@ async def get_readme_doc(relatorio:str):
 
 @app.post("/graficos")
 async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool = Depends(auth_request)):
+    
+    """
+    Gera gráficos a partir de dados enviados em JSON.
+
+    - **titulo**: Título do gráfico.
+    - **matricula**: Identificação do usuário.
+    - **dados**: Dados em formato JSON.
+    - **agrupamentos**: Lista de agrupamentos e métricas.
+    - **grafico**: Tipo de gráfico a ser gerado.
+
+    Retorna a URL do arquivo HTML gerado com os gráficos.
+    """    
+    
     agora = pd.Timestamp.now()
     expira = agora + pd.Timedelta(hours=1)
 
@@ -179,6 +216,15 @@ async def gerar_grafico(request: Request, payload: GraficoData, _validacao: bool
 
 @app.post("/graficos_excel")
 async def gerar_grafico_com_excel(file: UploadFile = File()):
+    
+    """
+    Gera gráficos a partir de um arquivo Excel enviado.
+
+    - **file**: Arquivo Excel (.xlsx, .xls) enviado via upload.
+
+    Retorna a URL do arquivo HTML gerado com os gráficos.
+    """    
+    
     try:
         os.makedirs("temp", exist_ok=True)
         file_location = f"temp/{file.filename}"
